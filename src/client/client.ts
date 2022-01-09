@@ -1,4 +1,9 @@
 import * as THREE from 'three';
+import { Object3D } from 'three';
+import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
+import {createPlanet, getRotationMesh} from "./planets";
+import { createSpace } from './space';
+import { createSun } from './sun';
 
 const canvas = document.querySelector('#canvas') as HTMLCanvasElement;
 
@@ -14,46 +19,97 @@ const far = 1000;
 const camera = new THREE.PerspectiveCamera(fov,aspect, near, far);
 
 //camera.position.z = 2;
+const controls = new OrbitControls(camera,renderer.domElement);
 
 camera.position.set(0, 50, 0);
-camera.up.set(0, 0, 1);
-camera.lookAt(0, 0, 0);
+//camera.up.set(0, 0, 1);
+//camera.lookAt(0, 0, 0);
+
+controls.update();
 
 const scene = new THREE.Scene();
 
-{
-    const color = 0xFFFFFF;
-    const intensity = 3;
-    const light = new THREE.PointLight(color, intensity);
-    scene.add(light);
-}
 
-const loader = new THREE.TextureLoader();
+createSpace(scene);
+
+const solarSystem = new THREE.Object3D();
+const mercuryOrbit = new THREE.Object3D();
+const venusOrbit = new THREE.Object3D();
+const earthOrbit = new THREE.Object3D();
+const marsOrbit = new THREE.Object3D();
+const jupiterOrbit = new THREE.Object3D();
+const saturnOrbit = new THREE.Object3D();
+const uranusOrbit = new THREE.Object3D();
+const neptunusOrbit = new THREE.Object3D();
+
+scene.add(solarSystem)
+
+const objectsSolarSystem : THREE.Object3D[] = [];
+
+const sun = createSun(scene);
+const mercury = createPlanet(7,0.5,"2k_mercury.jpeg",2);
+const venus = createPlanet(10,0.7,"2k_venus_atmosphere.jpeg",2);
+const earth = createPlanet(20,1,"2k_earth_daymap.jpeg",2);
+const mars = createPlanet(30,1,"2k_mars.jpeg",2);
+const jupiter = createPlanet(45,3,"2k_jupiter.jpeg",2);
+const saturn = createPlanet(55,2,"2k_saturn.jpeg",2);
+const uranus = createPlanet(65,1.5,"2k_uranus.jpeg",2);
+const neptune = createPlanet(75,1.7,"2k_neptune.jpeg",2);
+
+mercuryOrbit.userData["rotationSpeed"] = 2;
+venusOrbit.userData["rotationSpeed"] = 1.5;
+earthOrbit.userData["rotationSpeed"] = 1;
+marsOrbit.userData["rotationSpeed"] = 0.7;
+jupiterOrbit.userData["rotationSpeed"] = 0.5;
+saturnOrbit.userData["rotationSpeed"] = 0.2;
+uranusOrbit.userData["rotationSpeed"] = 0.1;
+neptunusOrbit.userData["rotationSpeed"] = 0.04;
+
+mercuryOrbit.add(mercury);
+mercuryOrbit.add(getRotationMesh(mercury));
+venusOrbit.add(venus);
+venusOrbit.add(getRotationMesh(venus));
+earthOrbit.add(earth);
+earthOrbit.add(getRotationMesh(earth));
+marsOrbit.add(mars);
+marsOrbit.add(getRotationMesh(mars));
+jupiterOrbit.add(jupiter);
+jupiterOrbit.add(getRotationMesh(jupiter));
+saturnOrbit.add(saturn);
+saturnOrbit.add(getRotationMesh(saturn));
+uranusOrbit.add(uranus);
+uranusOrbit.add(getRotationMesh(uranus));
+neptunusOrbit.add(neptune);
+neptunusOrbit.add(getRotationMesh(neptune));
 
 
-loader.load("2k_stars_milky_way.jpeg",function(texture) {
-    scene.background = texture;
-})
+solarSystem.add(sun);
+solarSystem.add(mercuryOrbit);
+solarSystem.add(venusOrbit);
+solarSystem.add(earthOrbit);
+solarSystem.add(marsOrbit);
+solarSystem.add(jupiterOrbit);
+solarSystem.add(saturnOrbit);
+solarSystem.add(uranusOrbit);
+solarSystem.add(neptunusOrbit);
 
-
-
-const objectsSolarSystem : THREE.Mesh[] = [];
-
-const radius = 1;
-const widthSegments = 75;
-const heightSegments = 75;
-const sphereGeometry = new THREE.SphereGeometry(radius,widthSegments,heightSegments);
-
-
-const texture = new THREE.TextureLoader().load("2k_sun.jpeg");
-
-const sunMaterial = new THREE.MeshBasicMaterial({map: texture});
-
-const sunMesh = new THREE.Mesh(sphereGeometry,sunMaterial);
-
-sunMesh.scale.set(5,5,5);
-scene.add(sunMesh);
-objectsSolarSystem.push(sunMesh);
+objectsSolarSystem.push(sun);
+objectsSolarSystem.push(mercuryOrbit);
+objectsSolarSystem.push(mercury);
+objectsSolarSystem.push(venusOrbit);
+objectsSolarSystem.push(venus);
+objectsSolarSystem.push(earthOrbit);
+objectsSolarSystem.push(earth);
+objectsSolarSystem.push(marsOrbit);
+objectsSolarSystem.push(mars);
+objectsSolarSystem.push(jupiterOrbit);
+objectsSolarSystem.push(jupiter);
+objectsSolarSystem.push(saturnOrbit);
+objectsSolarSystem.push(saturn);
+objectsSolarSystem.push(uranusOrbit);
+objectsSolarSystem.push(uranus);
+objectsSolarSystem.push(neptunusOrbit);
+objectsSolarSystem.push(neptune);
 
 
 
@@ -88,7 +144,8 @@ function render(time: number) {
     //cube.rotation.y = time;
 
     objectsSolarSystem.forEach((obj) => {
-        obj.rotation.y = time;
+        console.log("obj", obj.userData)
+        obj.rotation.y = time*obj.userData["rotationSpeed"];
     });
    
     renderer.render(scene, camera);
