@@ -1,6 +1,7 @@
 import * as THREE from 'three';
-import { Object3D } from 'three';
+import { Object3D, PerspectiveCamera } from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
+import {GUI} from 'dat.gui';
 import {createPlanet, getRotationMesh} from "./planets";
 import { createSpace } from './space';
 import { createSun } from './sun';
@@ -16,7 +17,12 @@ const near = 0.1;
 
 const far = 1000;
 
-const camera = new THREE.PerspectiveCamera(fov,aspect, near, far);
+let camera = new THREE.PerspectiveCamera(fov,aspect, near, far);
+
+
+
+
+
 
 //camera.position.z = 2;
 const controls = new OrbitControls(camera,renderer.domElement);
@@ -24,6 +30,7 @@ const controls = new OrbitControls(camera,renderer.domElement);
 camera.position.set(0, 50, 0);
 //camera.up.set(0, 0, 1);
 //camera.lookAt(0, 0, 0);
+
 
 controls.update();
 
@@ -48,6 +55,7 @@ const objectsSolarSystem : THREE.Object3D[] = [];
 
 const sun = createSun(scene);
 const mercury = createPlanet(7,0.5,"2k_mercury.jpeg",2);
+mercury.name = "mercury";
 const venus = createPlanet(10,0.7,"2k_venus_atmosphere.jpeg",2);
 const earth = createPlanet(20,1,"2k_earth_daymap.jpeg",2);
 const mars = createPlanet(30,1,"2k_mars.jpeg",2);
@@ -66,7 +74,13 @@ uranusOrbit.userData["rotationSpeed"] = 0.1;
 neptunusOrbit.userData["rotationSpeed"] = 0.04;
 
 mercuryOrbit.add(mercury);
-mercuryOrbit.add(getRotationMesh(mercury));
+const mercuryRotation = getRotationMesh(mercury);
+mercuryRotation.name = "mr";
+const mercuryCamera = new PerspectiveCamera(fov,aspect,near,far);
+mercuryCamera.position.set(7,0,2);
+mercuryOrbit.add(mercuryRotation);
+//mercury.add(mercuryCamera);
+mercuryOrbit.add(mercuryCamera);
 venusOrbit.add(venus);
 venusOrbit.add(getRotationMesh(venus));
 earthOrbit.add(earth);
@@ -111,7 +125,17 @@ objectsSolarSystem.push(uranus);
 objectsSolarSystem.push(neptunusOrbit);
 objectsSolarSystem.push(neptune);
 
+//camera.removeFromParent();
 
+//camera = mercuryOrbit.getObjectByName("mr")?.getObjectByName("planetCamera") as THREE.PerspectiveCamera;
+
+camera = mercuryCamera;
+
+controls.update();
+/** GUI controls manegement */
+const gui = new GUI();
+const planetsControlFolder = gui.addFolder('Planets');
+const controller = planetsControlFolder.add(mercuryOrbit.userData,"rotationSpeed",0,4).name("Mercury rotation speed");
 
 function resizeRendererToDisplaySize(renderer: THREE.WebGL1Renderer) {
     const canvas = renderer.domElement;
@@ -144,9 +168,10 @@ function render(time: number) {
     //cube.rotation.y = time;
 
     objectsSolarSystem.forEach((obj) => {
-        console.log("obj", obj.userData)
         obj.rotation.y = time*obj.userData["rotationSpeed"];
     });
+
+    //camera.lookAt(mercuryOrbit.getObjectByName('mercury')?.position || 0);
    
     renderer.render(scene, camera);
    
