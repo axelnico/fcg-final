@@ -5,6 +5,7 @@ import {GUI} from 'dat.gui';
 import {createPlanet, getRotationMesh} from "./planets";
 import { createSpace } from './space';
 import { createSun } from './sun';
+import { generateGUIControls } from './helper/gui';
 
 const canvas = document.querySelector('#canvas') as HTMLCanvasElement;
 
@@ -34,10 +35,8 @@ camera.position.set(0, 50, 0);
 
 controls.update();
 
-const scene = new THREE.Scene();
 
-
-createSpace(scene);
+const space = createSpace();
 
 const solarSystem = new THREE.Object3D();
 const mercuryOrbit = new THREE.Object3D();
@@ -49,20 +48,19 @@ const saturnOrbit = new THREE.Object3D();
 const uranusOrbit = new THREE.Object3D();
 const neptunusOrbit = new THREE.Object3D();
 
-scene.add(solarSystem)
+space.add(solarSystem)
 
 const objectsSolarSystem : THREE.Object3D[] = [];
 
-const sun = createSun(scene);
-const mercury = createPlanet(7,0.5,"2k_mercury.jpeg",2);
-mercury.name = "mercury";
-const venus = createPlanet(10,0.7,"2k_venus_atmosphere.jpeg",2);
-const earth = createPlanet(20,1,"2k_earth_daymap.jpeg",2);
-const mars = createPlanet(30,1,"2k_mars.jpeg",2);
-const jupiter = createPlanet(45,3,"2k_jupiter.jpeg",2);
-const saturn = createPlanet(55,2,"2k_saturn.jpeg",2);
-const uranus = createPlanet(65,1.5,"2k_uranus.jpeg",2);
-const neptune = createPlanet(75,1.7,"2k_neptune.jpeg",2);
+const sun = createSun(space);
+const mercury = createPlanet("mercury",7,0.5,"2k_mercury.jpeg",2);
+const venus = createPlanet("venus",10,0.7,"2k_venus_atmosphere.jpeg",2);
+const earth = createPlanet("earth",20,1,"2k_earth_daymap.jpeg",2);
+const mars = createPlanet("mars",30,1,"2k_mars.jpeg",2);
+const jupiter = createPlanet("jupiter",45,3,"2k_jupiter.jpeg",2);
+const saturn = createPlanet("saturn",55,2,"2k_saturn.jpeg",2);
+const uranus = createPlanet("uranus",65,1.5,"2k_uranus.jpeg",2);
+const neptune = createPlanet("neptune",75,1.7,"2k_neptune.jpeg",2);
 
 mercuryOrbit.userData["rotationSpeed"] = 2;
 venusOrbit.userData["rotationSpeed"] = 1.5;
@@ -85,6 +83,9 @@ venusOrbit.add(venus);
 venusOrbit.add(getRotationMesh(venus));
 earthOrbit.add(earth);
 earthOrbit.add(getRotationMesh(earth));
+const earthCamera = new PerspectiveCamera(fov,aspect,near,far);
+earthOrbit.add(earthCamera);
+earthCamera.position.set(20,0,3);
 marsOrbit.add(mars);
 marsOrbit.add(getRotationMesh(mars));
 jupiterOrbit.add(jupiter);
@@ -95,7 +96,6 @@ uranusOrbit.add(uranus);
 uranusOrbit.add(getRotationMesh(uranus));
 neptunusOrbit.add(neptune);
 neptunusOrbit.add(getRotationMesh(neptune));
-
 
 solarSystem.add(sun);
 solarSystem.add(mercuryOrbit);
@@ -125,17 +125,21 @@ objectsSolarSystem.push(uranus);
 objectsSolarSystem.push(neptunusOrbit);
 objectsSolarSystem.push(neptune);
 
+
+const celestialBodies = new Array(mercuryOrbit,venusOrbit,earthOrbit,marsOrbit,jupiterOrbit,saturnOrbit,uranusOrbit,neptunusOrbit,space.getObjectByName("Sun") as THREE.Object3D,space.getObjectByName("space light") as THREE.Object3D);
 //camera.removeFromParent();
 
 //camera = mercuryOrbit.getObjectByName("mr")?.getObjectByName("planetCamera") as THREE.PerspectiveCamera;
 
-camera = mercuryCamera;
+camera = earthCamera;
 
 controls.update();
 /** GUI controls manegement */
-const gui = new GUI();
-const planetsControlFolder = gui.addFolder('Planets');
-const controller = planetsControlFolder.add(mercuryOrbit.userData,"rotationSpeed",0,4).name("Mercury rotation speed");
+
+generateGUIControls(celestialBodies);
+//const gui = new GUI();
+//const planetsControlFolder = gui.addFolder('Planets');
+//const controller = planetsControlFolder.add(mercuryOrbit.userData,"rotationSpeed",0,4).name("Mercury rotation speed");
 
 function resizeRendererToDisplaySize(renderer: THREE.WebGL1Renderer) {
     const canvas = renderer.domElement;
@@ -168,12 +172,12 @@ function render(time: number) {
     //cube.rotation.y = time;
 
     objectsSolarSystem.forEach((obj) => {
-        obj.rotation.y = time*obj.userData["rotationSpeed"];
+        obj.rotation.y = obj.userData["rotationSpeed"] !== 0 ? time*obj.userData["rotationSpeed"] : obj.rotation.y;
     });
 
     //camera.lookAt(mercuryOrbit.getObjectByName('mercury')?.position || 0);
    
-    renderer.render(scene, camera);
+    renderer.render(space, camera);
    
     requestAnimationFrame(render);
   }
