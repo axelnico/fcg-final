@@ -28,7 +28,7 @@ let camera = new THREE.PerspectiveCamera(fov,aspect, near, far);
 //camera.position.z = 2;
 const controls = new OrbitControls(camera,renderer.domElement);
 
-camera.position.set(0, 50, 0);
+camera.position.set(20, 50, 30);
 //camera.up.set(0, 0, 1);
 //camera.lookAt(0, 0, 0);
 
@@ -131,9 +131,9 @@ const celestialBodies = new Array(mercuryOrbit,venusOrbit,earthOrbit,marsOrbit,j
 
 //camera = mercuryOrbit.getObjectByName("mr")?.getObjectByName("planetCamera") as THREE.PerspectiveCamera;
 
-camera = earthCamera;
+//camera = earthCamera;
 
-controls.update();
+//controls.update();
 /** GUI controls manegement */
 
 generateGUIControls(celestialBodies);
