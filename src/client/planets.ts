@@ -77,6 +77,7 @@ uniform PointLight pointLights[NUM_POINT_LIGHTS];
 varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 surfaceToLight;
+varying vec3 surfaceToView;
 
 void main() {
   vUv = uv;
@@ -84,6 +85,7 @@ void main() {
   vNormal = normalMatrix * normal;
   vec3 surfaceWorldPosition = (modelViewMatrix * vec4(position,1.0)).xyz;
   surfaceToLight = pointLights[0].position - surfaceWorldPosition;
+  surfaceToView = cameraPosition - surfaceWorldPosition;
   gl_Position = projectionMatrix * mvPosition;
 }
 `;
@@ -101,12 +103,15 @@ struct PointLight {
    
 uniform PointLight pointLights[NUM_POINT_LIGHTS];
 
+uniform float pointLightIntensity;
+
 uniform sampler2D dayTexture;
 uniform sampler2D nightTexture;
 
 varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 surfaceToLight;
+varying vec3 surfaceToView;
 
 void main( void ) {
   vec3 dayColor = texture2D( dayTexture, vUv ).rgb;
@@ -115,11 +120,14 @@ void main( void ) {
   vec3 normal = normalize(vNormal);
 
   vec3 surfaceToLightDirection = normalize(surfaceToLight);
+  vec3 surfaceToViewDirection = normalize(surfaceToView);
+  vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
+  float specular = dot(normal, halfVector);
 
   // compute cosine sun to normal so -1 is away from sun and +1 is toward sun.
   float cosineAngleSunToNormal = dot(normalize(vNormal), surfaceToLightDirection);
 
-  float light = max(0.0,dot(normal,surfaceToLightDirection)*10.0);
+  float light = dot(normal,surfaceToLightDirection);
 
   // sharpen the edge beween the transition
   cosineAngleSunToNormal = clamp( cosineAngleSunToNormal * 10.0, -1.0, 1.0);
@@ -127,32 +135,38 @@ void main( void ) {
   // convert to 0 to 1 for mixing
   float mixAmount = cosineAngleSunToNormal * 0.5 + 0.5;
 
+  mixAmount *= pointLightIntensity;
+
   // Select day or night texture based on mix.
   vec3 color = mix( nightColor, dayColor, mixAmount );
 
   vec3 color1 = cosineAngleSunToNormal < 0.0 ? dayColor : nightColor;
 
-  gl_FragColor = vec4( color1, 1.0 );
+  gl_FragColor = vec4( color, 1.0 );
+
+  //gl_FragColor.rgb += specular;
 
   //gl_FragColor = vec4(1,0,0,1);
 
-  //gl_FragColor.rgb = dayColor*pointLights[0].color; 
+  //gl_FragColor = vec4(dayColor, 1.0); 
 
-  //gl_FragColor.rgb *= light;
+  //gl_FragColor.rgb *= 3.0;
 }
 
 `;
 
 export const createEarth = (name: string, position: number, size: number, surface: string, rotationSpeed: number,scene: THREE.Scene) => {
     //const texture = new THREE.TextureLoader().load(surface);
+    const textures =  {
+        dayTexture: { type: "t", value: new THREE.TextureLoader().load( "2k_earth_daymap.jpeg" ) },
+        nightTexture: { type: "t", value: new THREE.TextureLoader().load( "2k_earth_nightmap.jpeg" ) }};
+    const pointLight = scene.getObjectByName("Sun") as THREE.PointLight;
+    const uniforms = {...textures, ...THREE.UniformsLib['lights'], pointLightIntensity: { value: pointLight.intensity}}
     const planetMaterial = new THREE.ShaderMaterial({
-        uniforms: THREE.UniformsUtils.merge([THREE.UniformsLib['lights'],
-        {
-            dayTexture: { value: new THREE.TextureLoader().load( "2k_earth_daymap.jpeg" ) },
-            nightTexture: { value: new THREE.TextureLoader().load( "2k_earth_nightmap.jpeg" ) }}]),
+        uniforms: uniforms,
         vertexShader: vs,
         fragmentShader: fs,
-        lights: true
+        lights: true,
     })
     const planetMesh = new THREE.Mesh(sphereGeometry,planetMaterial);
     planetMesh.name = name;

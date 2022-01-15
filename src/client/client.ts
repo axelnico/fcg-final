@@ -131,8 +131,8 @@ const celestialBodies = new Array(mercuryOrbit,venusOrbit,earthOrbit,marsOrbit,j
 
 //camera = mercuryOrbit.getObjectByName("mr")?.getObjectByName("planetCamera") as THREE.PerspectiveCamera;
 
-//camera = earthCamera;
-
+camera = earthCamera;
+//camera = mercuryCamera;
 //controls.update();
 /** GUI controls manegement */
 
@@ -176,7 +176,6 @@ function render(time: number) {
     });
 
     //camera.lookAt(mercuryOrbit.getObjectByName('mercury')?.position || 0);
-   
     renderer.render(space, camera);
    
     requestAnimationFrame(render);
