@@ -17,7 +17,7 @@ export const createSun = (space: THREE.Scene) => {
     sunMesh.scale.set(5,5,5);
     {
         const color = 0xFFFFFF;
-        const intensity = 3;
+        const intensity = 2;
         const light = new THREE.PointLight(color, intensity);
         light.name = "Sun";
         space.add(light);

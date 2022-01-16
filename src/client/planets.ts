@@ -105,8 +105,11 @@ uniform PointLight pointLights[NUM_POINT_LIGHTS];
 
 uniform float pointLightIntensity;
 
+uniform float ambientLightIntensity;
+
 uniform sampler2D dayTexture;
 uniform sampler2D nightTexture;
+uniform sampler2D cloudsTexture;
 
 varying vec2 vUv;
 varying vec3 vNormal;
@@ -116,6 +119,7 @@ varying vec3 surfaceToView;
 void main( void ) {
   vec3 dayColor = texture2D( dayTexture, vUv ).rgb;
   vec3 nightColor = texture2D( nightTexture, vUv ).rgb;
+  vec3 clouds = texture2D( cloudsTexture, vUv ).rgb;
 
   vec3 normal = normalize(vNormal);
 
@@ -137,10 +141,18 @@ void main( void ) {
 
   mixAmount *= pointLightIntensity;
 
-  // Select day or night texture based on mix.
-  vec3 color = mix( nightColor, dayColor, mixAmount );
+  mixAmount += ambientLightIntensity;
+  
+  vec3 nightColorCloudy = nightColor * 0.6 + clouds * 0.4 * 0.6;
 
-  vec3 color1 = cosineAngleSunToNormal < 0.0 ? dayColor : nightColor;
+  vec3 dayColorCloudy = dayColor * 0.6 + clouds * 0.4 * 0.6;
+
+  // Select day or night texture based on mix.
+  vec3 color = mixAmount > 1.0 ? dayColorCloudy * mixAmount : mix( nightColorCloudy, dayColorCloudy, mixAmount );
+
+  //vec3 finalColor = color * 0.2 + clouds * 0.8;
+
+  //vec3 color1 = cosineAngleSunToNormal < 0.0 ? dayColor : nightColor;
 
   gl_FragColor = vec4( color, 1.0 );
 
@@ -150,7 +162,7 @@ void main( void ) {
 
   //gl_FragColor = vec4(dayColor, 1.0); 
 
-  //gl_FragColor.rgb *= 3.0;
+  //gl_FragColor.rgb *= 0.0;
 }
 
 `;
@@ -159,9 +171,17 @@ export const createEarth = (name: string, position: number, size: number, surfac
     //const texture = new THREE.TextureLoader().load(surface);
     const textures =  {
         dayTexture: { type: "t", value: new THREE.TextureLoader().load( "2k_earth_daymap.jpeg" ) },
-        nightTexture: { type: "t", value: new THREE.TextureLoader().load( "2k_earth_nightmap.jpeg" ) }};
+        nightTexture: { type: "t", value: new THREE.TextureLoader().load( "2k_earth_nightmap.jpeg" ) },
+        cloudsTexture : { type: "t", value: new THREE.TextureLoader().load( "2k_earth_clouds.jpeg" )}
+    };
     const pointLight = scene.getObjectByName("Sun") as THREE.PointLight;
-    const uniforms = {...textures, ...THREE.UniformsLib['lights'], pointLightIntensity: { value: pointLight.intensity}}
+    const ambientLight = scene.getObjectByName("space light") as THREE.AmbientLight;
+    const uniforms = {
+        ...textures, 
+        ...THREE.UniformsLib['lights'], 
+        pointLightIntensity: { value: pointLight.intensity}, 
+        ambientLightIntensity: { value: ambientLight.intensity}
+    }
     const planetMaterial = new THREE.ShaderMaterial({
         uniforms: uniforms,
         vertexShader: vs,

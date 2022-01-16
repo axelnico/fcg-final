@@ -25,7 +25,11 @@ export const generateGUIControls = (celestialBodies: THREE.Object3D<THREE.Event>
             const spaceLight = celestialBodies[index];
             if (spaceLight){
                 const sunControlFolder = gui.addFolder("Space");
-                sunControlFolder.add(spaceLight,"intensity",0,0.3,0.05).name("Darkness");
+                sunControlFolder.add(spaceLight,"intensity",0,0.3,0.05).name("Darkness").onChange((value:number) => {
+                    const earth = celestialBodies.find((cb) => cb.getObjectByProperty('type',"planet")?.name === "earth")?.getObjectByProperty('type',"planet") as THREE.Mesh;
+                    const material = earth.material as THREE.ShaderMaterial;
+                    material.uniforms.ambientLightIntensity = {value};
+                });
             }
         }
         
