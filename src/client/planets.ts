@@ -36,12 +36,25 @@ const near = 0.1;
 const far = 1000;
 
 
-export const getRotationMesh = (planet: THREE.Mesh) => {
+export const getRotationMesh = (planet: THREE.Object3D) => {
     const boxGeometry = new THREE.BoxGeometry(planet.position.x,0.25,0.25);
     const material = new THREE.MeshNormalMaterial();
     const mesh = new THREE.Mesh(boxGeometry,material);
     mesh.position.x = planet.position.x / 2;
     mesh.visible = false;
+    //const camera = new THREE.PerspectiveCamera(fov,aspect, near, far);
+    //camera.name = "planetCamera";
+    //camera.position.set(planet.position.x - 10,0.25,0.25)
+    //mesh.add(camera);
+    return mesh;
+}
+
+export const getMoonRotationMesh = (planet: THREE.Object3D) => {
+    const boxGeometry = new THREE.BoxGeometry(planet.position.x/4,0.25,0.25);
+    const material = new THREE.MeshNormalMaterial();
+    const mesh = new THREE.Mesh(boxGeometry,material);
+    mesh.position.x = planet.position.x;
+    mesh.visible = true;
     //const camera = new THREE.PerspectiveCamera(fov,aspect, near, far);
     //camera.name = "planetCamera";
     //camera.position.set(planet.position.x - 10,0.25,0.25)
@@ -59,6 +72,51 @@ export const createPlanet = (name: string, position: number, size: number, surfa
     planetMesh.scale.set(size,size,size);
     planetMesh.userData["rotationSpeed"] = rotationSpeed;
     return planetMesh;
+}
+
+export const createMoon = (position: number, size: number, surface: string, rotationSpeed: number) => {
+    const texture = new THREE.TextureLoader().load(surface);
+    const planetMaterial = new THREE.MeshPhongMaterial({map: texture});
+    const moonMesh = new THREE.Mesh(sphereGeometry,planetMaterial);
+    moonMesh.name = "Moon";
+    moonMesh.position.x = position;
+    moonMesh.scale.set(size,size,size);
+    moonMesh.userData["rotationSpeed"] = rotationSpeed;
+    return moonMesh;
+}
+
+export const createSaturn = (name: string, position: number, size: number, surface: string, rotationSpeed: number) => {
+    const texture = new THREE.TextureLoader().load(surface);
+    
+    const planetMaterial = new THREE.MeshPhongMaterial({map: texture});
+    
+
+ 
+    const planetMesh = new THREE.Mesh(sphereGeometry,planetMaterial);
+    
+    planetMesh.name = name;
+    planetMesh.type = "planet";
+    planetMesh.position.x = position;
+    planetMesh.scale.set(size,size,size);
+    planetMesh.userData["rotationSpeed"] = rotationSpeed;
+    return planetMesh;
+}
+
+export const createSaturnRing = (saturn: THREE.Mesh) => {
+    const rings = new THREE.TextureLoader().load("2k_saturn_ring_alpha.png");
+    const ringGeometry = new THREE.RingBufferGeometry(3,5,64);
+    const pos = ringGeometry.attributes.position;
+    const v3 = new THREE.Vector3();
+    for (let i = 0; i < pos.count; i++){
+        v3.fromBufferAttribute(pos, i);
+        ringGeometry.attributes.uv.setXY(i, v3.length() < 4 ? 0 : 1, 1);
+    }
+    const ringMaterial = new THREE.MeshBasicMaterial({map:rings, color: 0xffffff, side: THREE.DoubleSide, transparent: true});
+    const ringMesh = new THREE.Mesh(ringGeometry,ringMaterial);
+    ringMesh.scale.set(1,1,1);
+    ringMesh.position.set(saturn.position.x,saturn.position.y,saturn.position.z);
+    ringMesh.rotation.x = -40;
+    return ringMesh;
 }
 
 const vs = `
@@ -191,8 +249,12 @@ export const createEarth = (name: string, position: number, size: number, surfac
     const planetMesh = new THREE.Mesh(sphereGeometry,planetMaterial);
     planetMesh.name = name;
     planetMesh.type = "planet";
-    planetMesh.position.x = position;
-    planetMesh.scale.set(size,size,size);
+    //planetMesh.position.x = position;
+    //planetMesh.scale.set(size,size,size);
     planetMesh.userData["rotationSpeed"] = rotationSpeed;
-    return planetMesh;
+    const external = new THREE.Object3D();
+    external.position.x = position;
+    planetMesh.scale.set(size,size,size);
+    external.add(planetMesh);
+    return external;
 }
