@@ -258,3 +258,39 @@ export const createEarth = (name: string, position: number, size: number, surfac
     external.add(planetMesh);
     return external;
 }
+
+class CelestialBody {
+    
+    private object:THREE.Object3D;
+
+    constructor(rotationSpeed: number){
+        this.object = new THREE.Object3D();
+        this.rotationSpeed = rotationSpeed;
+    }
+
+    get rotationSpeed() : number {
+        return this.rotationSpeed;       
+    }
+
+    set rotationSpeed(speed:number) {
+        this.rotationSpeed = speed;
+    }
+
+    get rotationY() : number {
+        return this.object.rotation.y;       
+    }
+
+    set rotationY(rotation:number) {
+        this.object.rotation.y = rotation;
+    }
+}
+
+class Planet extends CelestialBody {
+
+    constructor(name: string, position: number, size: number, surface: string, rotationSpeed: number){
+        super(rotationSpeed);
+    }
+
+
+}
+
