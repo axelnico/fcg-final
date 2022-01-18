@@ -1,4 +1,5 @@
 import {GUI} from 'dat.gui';
+import { CelestialBody } from '../planets';
 
 /** GUI controls manegement */
 export const generateGUIControls = (celestialBodies: THREE.Object3D<THREE.Event>[]) => {
@@ -33,5 +34,13 @@ export const generateGUIControls = (celestialBodies: THREE.Object3D<THREE.Event>
             }
         }
         
+    }
+}
+
+export const generateGUIControls2 = (celestialBodies: CelestialBody[]) => {
+    const gui = new GUI();
+    const length = celestialBodies.length;
+    for (let index = 0; index < length; index++) {
+        celestialBodies[index].buildUserControls(gui);
     }
 }

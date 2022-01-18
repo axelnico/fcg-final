@@ -1,3 +1,4 @@
+import { GUI } from "dat.gui";
 import * as THREE from "three";
 
 
@@ -259,21 +260,34 @@ export const createEarth = (name: string, position: number, size: number, surfac
     return external;
 }
 
-class CelestialBody {
+export class CelestialBody {
     
-    private object:THREE.Object3D;
+    protected object:THREE.Object3D;
 
-    constructor(rotationSpeed: number){
+    private _rotationSpeed : number;
+
+    constructor(rotationSpeed = 0){
+        console.log("Pasa");
         this.object = new THREE.Object3D();
-        this.rotationSpeed = rotationSpeed;
+        console.log("Pasa");
+        this._rotationSpeed = rotationSpeed;
+        console.log("Pasa");
+    }
+
+    add(anotherObject: CelestialBody){
+        this.object.add(anotherObject.getObject());
+    }
+
+    getObject() {
+        return this.object;
     }
 
     get rotationSpeed() : number {
-        return this.rotationSpeed;       
+        return this._rotationSpeed;       
     }
 
     set rotationSpeed(speed:number) {
-        this.rotationSpeed = speed;
+        this._rotationSpeed = speed;
     }
 
     get rotationY() : number {
@@ -283,14 +297,116 @@ class CelestialBody {
     set rotationY(rotation:number) {
         this.object.rotation.y = rotation;
     }
+
+    buildUserControls(gui: GUI){
+        gui.add(this,"rotationSpeed",0,4).name("Rotation");
+    }
 }
 
-class Planet extends CelestialBody {
+export class Planet extends CelestialBody {
+
+    private surfaceTexture: THREE.Texture;
+
+    private planetMaterial : THREE.Material;
+
+    private name: string;
 
     constructor(name: string, position: number, size: number, surface: string, rotationSpeed: number){
         super(rotationSpeed);
+        this.surfaceTexture = new THREE.TextureLoader().load(surface);
+        this.planetMaterial = new THREE.MeshPhongMaterial({map: this.surfaceTexture});
+        const planetMesh = new THREE.Mesh(sphereGeometry,this.planetMaterial);
+        this.name = name;
+        planetMesh.position.x = position;
+        planetMesh.scale.set(size,size,size);
+        this.object = planetMesh;
     }
 
+    getName() {
+        return this.name;
+    }
 
 }
 
+export class Orbit extends CelestialBody {
+
+    private planet: Planet;
+
+    constructor(planet:Planet,rotationSpeed: number) {
+        super(rotationSpeed);
+        const planetProximity = new THREE.Object3D;
+        this.planet = planet;
+        planetProximity.add(planet.getObject());
+        this.object = planetProximity;
+    }
+
+    buildUserControls(gui: GUI){
+        const planetControlFolder = gui.addFolder(this.planet.getName());
+        planetControlFolder.add(this,"rotationSpeed",0,4).name("Orbit speed");
+        this.planet.buildUserControls(planetControlFolder);
+    }
+}
+
+export class Space extends CelestialBody {
+
+    private light: THREE.AmbientLight;
+
+    constructor(){
+        super();
+        const scene = new THREE.Scene();
+        const loader = new THREE.TextureLoader();
+        loader.load("2k_stars_milky_way.jpeg",function(texture) {
+            scene.background = texture;
+        })
+        const spaceLight = new THREE.AmbientLight(0xFFFFFF,0);
+        spaceLight.name = "space light";
+        scene.add(spaceLight);
+        
+
+        this.object = scene;
+       
+        this.light = spaceLight;
+    }
+
+    addSunLight(light: THREE.PointLight) {
+        this.object.add(light);
+    }
+
+    addCelestialBody(body: CelestialBody){
+        this.object.add(body.getObject());
+    }
+
+    buildUserControls(gui: GUI){
+        const spaceControlFolder = gui.addFolder("Space");;
+        spaceControlFolder.add(this.light,"intensity",0,0.3,0.05).name("Darkness");
+    }
+}
+
+
+export class Sun extends CelestialBody {
+    
+    private light: THREE.PointLight;
+
+    constructor(space:Space,rotationSpeed: number){
+        super(rotationSpeed);
+        const sunTexture = new THREE.TextureLoader().load("2k_sun.jpeg");
+        const sunMaterial = new THREE.MeshBasicMaterial({map: sunTexture});
+        const sunMesh = new THREE.Mesh(sphereGeometry,sunMaterial);
+        sunMesh.scale.set(5,5,5);
+        {
+            const color = 0xFFFFFF;
+            const intensity = 2;
+            const light = new THREE.PointLight(color, intensity);
+            light.name = "Sun";
+            this.light = light;
+            space.addSunLight(light);
+        }
+        this.object = sunMesh;
+    }
+
+    buildUserControls(gui: GUI){
+        const sunControlFolder = gui.addFolder("Sun");
+        sunControlFolder.add(this.light,"intensity",0,4).name("Shininess");
+        super.buildUserControls(sunControlFolder);
+    }
+}
