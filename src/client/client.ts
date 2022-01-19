@@ -9,7 +9,7 @@ import { generateGUIControls, generateGUIControls2 } from './helper/gui';
 
 const canvas = document.querySelector('#canvas') as HTMLCanvasElement;
 
-const renderer = new THREE.WebGL1Renderer({canvas});
+export const renderer = new THREE.WebGL1Renderer({canvas});
 
 const fov = 40;
 
@@ -19,7 +19,7 @@ const near = 0.1;
 const far = 1000;
 
 let camera = new THREE.PerspectiveCamera(fov,aspect, near, far);
-
+camera.name = "main camera";
 
 
 
@@ -51,26 +51,26 @@ const sun2 = new Sun(space2,1.2);
 
 
 
-const mercury2 = new Planet("mercury",MERCURY_DISTANCE,MERCURY_SIZE,"2k_mercury.jpeg",2);
+const mercury2 = new Planet("mercury",MERCURY_SIZE,"2k_mercury.jpeg",2,0x92a3b3);
 
-const venus2 =  new Planet("venus",10,0.7,"2k_venus_atmosphere.jpeg",2);
+const venus2 =  new Planet("venus",0.7,"2k_venus_atmosphere.jpeg",2,0xdaa969);
 
 
 //const earth = createEarth("earth",20,1,"2k_earth_daymap.jpeg",0.5,space);
 //const moon = createMoon(4,0.2,"2k_moon.jpg",3);
-const mars2 = new Planet("mars",30,1,"2k_mars.jpeg",2);
-const jupiter2 = new Planet("jupiter",45,3,"2k_jupiter.jpeg",2);
-const uranus2 = new Planet("uranus",65,1.5,"2k_uranus.jpeg",2);
-const neptune2 = new Planet("neptune",75,1.7,"2k_neptune.jpeg",2);
+const mars2 = new Planet("mars",1,"2k_mars.jpeg",2,0xea622b);
+const jupiter2 = new Planet("jupiter",3,"2k_jupiter.jpeg",2,0xebb672);
+const uranus2 = new Planet("uranus",1.5,"2k_uranus.jpeg",2,0x6dc8db);
+const neptune2 = new Planet("neptune",1.7,"2k_neptune.jpeg",2,0x05457f);
 
-
+let fakeCamera = camera.clone();
 //const mercuryOrbit = new THREE.Object3D();
-const mercuryOrbit2 = new Orbit(mercury2,2);
-const venusOrbit2 = new Orbit(venus2,1.5);
-const marsOrbit2 = new Orbit(mars2,0.7);
-const jupiterOrbit2 = new Orbit(jupiter2,0.5);
-const uranusOrbit2 = new Orbit(uranus2,0.1);
-const neptunusOrbit2 = new Orbit(neptune2,0.04);
+const mercuryOrbit2 = new Orbit(mercury2,2,MERCURY_DISTANCE,camera,fakeCamera);
+const venusOrbit2 = new Orbit(venus2,1.5,10,camera,fakeCamera);
+const marsOrbit2 = new Orbit(mars2,0.7,30,camera,fakeCamera);
+const jupiterOrbit2 = new Orbit(jupiter2,0.5,45,camera,fakeCamera);
+const uranusOrbit2 = new Orbit(uranus2,0.1,65,camera,fakeCamera);
+const neptunusOrbit2 = new Orbit(neptune2,0.04,75,camera,fakeCamera);
 
 
 //const venusOrbit = new THREE.Object3D();
@@ -134,8 +134,8 @@ const objectsSolarSystem2 : CelestialBody[] = [];
 //camera.lookAt(20, 10, 3);
 //earth.add(camera);
 //const earth2 = earth.getObjectByName("earth");
-let fakeCamera = camera.clone();
-const controls = new OrbitControls(fakeCamera,renderer.domElement);
+//let fakeCamera = camera.clone();
+export let controls = new OrbitControls(fakeCamera,renderer.domElement);
 //controls.enablePan = false;
 //controls.enableDamping = false;
 

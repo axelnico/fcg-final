@@ -1,5 +1,7 @@
 import { GUI } from "dat.gui";
 import * as THREE from "three";
+import { TOUCH } from "three";
+import { controls } from "./client";
 
 
 export const MERCURY_DISTANCE = 7;
@@ -267,11 +269,8 @@ export class CelestialBody {
     private _rotationSpeed : number;
 
     constructor(rotationSpeed = 0){
-        console.log("Pasa");
         this.object = new THREE.Object3D();
-        console.log("Pasa");
         this._rotationSpeed = rotationSpeed;
-        console.log("Pasa");
     }
 
     add(anotherObject: CelestialBody){
@@ -311,13 +310,18 @@ export class Planet extends CelestialBody {
 
     private name: string;
 
-    constructor(name: string, position: number, size: number, surface: string, rotationSpeed: number){
+    private _realistic: boolean;
+
+    private basicColor: THREE.ColorRepresentation;
+
+    constructor(name: string, size: number, surface: string, rotationSpeed: number, basicColor: THREE.ColorRepresentation){
         super(rotationSpeed);
         this.surfaceTexture = new THREE.TextureLoader().load(surface);
         this.planetMaterial = new THREE.MeshPhongMaterial({map: this.surfaceTexture});
         const planetMesh = new THREE.Mesh(sphereGeometry,this.planetMaterial);
+        this._realistic = true;
+        this.basicColor = basicColor;
         this.name = name;
-        planetMesh.position.x = position;
         planetMesh.scale.set(size,size,size);
         this.object = planetMesh;
     }
@@ -326,24 +330,84 @@ export class Planet extends CelestialBody {
         return this.name;
     }
 
+    get realistic() {
+        return this._realistic;
+    }
+
+    set realistic(real:boolean){
+        this._realistic = real;
+        const planet = this.object as THREE.Mesh;
+        if (real){
+            planet.material = new THREE.MeshPhongMaterial({map: this.surfaceTexture});
+        } else {
+            planet.material = new THREE.MeshPhongMaterial({color: this.basicColor});
+        }
+    }
+
+    buildUserControls(gui: GUI){
+        super.buildUserControls(gui);
+        gui.add(this,"realistic").name("Real Surface");
+    }
+
 }
 
 export class Orbit extends CelestialBody {
 
     private planet: Planet;
 
-    constructor(planet:Planet,rotationSpeed: number) {
+    private _viewPlanet: boolean;
+
+    private camera: THREE.Camera;
+
+    private fakeCamera: THREE.Camera;
+
+    constructor(planet:Planet,rotationSpeed: number, distanceToSun: number, camera: THREE.Camera, fakeCamera: THREE.Camera) {
         super(rotationSpeed);
-        const planetProximity = new THREE.Object3D;
+        const orbit = new THREE.Object3D();
+        const planetProximity = new THREE.Object3D();
+        planetProximity.name = "proximity";
+        orbit.add(planetProximity);
+        planetProximity.position.x = distanceToSun;
         this.planet = planet;
         planetProximity.add(planet.getObject());
-        this.object = planetProximity;
+        this.object = orbit;
+        this._viewPlanet = false;
+        this.camera = camera;
+        this.fakeCamera = fakeCamera;
     }
 
     buildUserControls(gui: GUI){
+        gui = !gui.__folders["Planets"] ? gui.addFolder("Planets") : gui.__folders["Planets"];
         const planetControlFolder = gui.addFolder(this.planet.getName());
         planetControlFolder.add(this,"rotationSpeed",0,4).name("Orbit speed");
         this.planet.buildUserControls(planetControlFolder);
+        planetControlFolder.add(this,"viewPlanet").name("Look at").onChange((view) => {
+            if (view) {
+                Object.entries(gui.__folders)
+                .filter(([key,val]) => key !== this.planet.getName())
+                .forEach(([key,val]) => val.__controllers
+                .filter((c) => c.property === "viewPlanet")
+                .forEach((c) => c.setValue(false)));
+            }
+        });
+    }
+
+    get viewPlanet(){
+        return this._viewPlanet;
+    }
+
+    set viewPlanet(view:boolean){
+        this._viewPlanet = view;
+        if (view) {
+            this.object.getObjectByName("proximity")?.add(this.camera);
+            this.fakeCamera = this.camera.clone();
+            controls.update();
+        } else {
+            this.object.getObjectByName("proximity")?.remove(this.camera);
+            this.fakeCamera = this.camera.clone();
+            controls.update();
+            controls.reset();
+        }
     }
 }
 
