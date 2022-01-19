@@ -1,6 +1,5 @@
 import { GUI } from "dat.gui";
 import * as THREE from "three";
-import { TOUCH } from "three";
 import { controls } from "./client";
 
 
@@ -302,6 +301,7 @@ export class CelestialBody {
     }
 }
 
+
 export class Planet extends CelestialBody {
 
     private surfaceTexture: THREE.Texture;
@@ -310,9 +310,9 @@ export class Planet extends CelestialBody {
 
     private name: string;
 
-    private _realistic: boolean;
+    protected _realistic: boolean;
 
-    private basicColor: THREE.ColorRepresentation;
+    protected basicColor: THREE.ColorRepresentation;
 
     constructor(name: string, size: number, surface: string, rotationSpeed: number, basicColor: THREE.ColorRepresentation){
         super(rotationSpeed);
@@ -351,6 +351,17 @@ export class Planet extends CelestialBody {
 
 }
 
+export class Satellite extends Planet {
+
+    constructor(name: string, size: number, surface: string, rotationSpeed: number){
+        super(name,size,surface,rotationSpeed,0xffffff);
+    }
+
+    buildUserControls(gui: GUI){
+      // No user controls
+    }
+}
+
 export class Orbit extends CelestialBody {
 
     private planet: Planet;
@@ -374,6 +385,10 @@ export class Orbit extends CelestialBody {
         this._viewPlanet = false;
         this.camera = camera;
         this.fakeCamera = fakeCamera;
+    }
+
+    addSatellite(satelliteOrbit: Orbit){
+        this.object.getObjectByName("proximity")?.add(satelliteOrbit.getObject());
     }
 
     buildUserControls(gui: GUI){
@@ -440,6 +455,10 @@ export class Space extends CelestialBody {
         this.object.add(body.getObject());
     }
 
+    getLight(){
+        return this.light;
+    }
+
     buildUserControls(gui: GUI){
         const spaceControlFolder = gui.addFolder("Space");;
         spaceControlFolder.add(this.light,"intensity",0,0.3,0.05).name("Darkness");
@@ -468,9 +487,77 @@ export class Sun extends CelestialBody {
         this.object = sunMesh;
     }
 
+    getLight(){
+        return this.light;
+    }
+
     buildUserControls(gui: GUI){
         const sunControlFolder = gui.addFolder("Sun");
         sunControlFolder.add(this.light,"intensity",0,4).name("Shininess");
         super.buildUserControls(sunControlFolder);
+    }
+}
+
+export class Earth extends Planet {
+
+    private uniforms: any;
+
+    private textures: {
+        dayTexture: {
+            type: string;
+            value: THREE.Texture;
+        };
+        nightTexture: {
+            type: string;
+            value: THREE.Texture;
+        };
+        cloudsTexture: {
+            type: string;
+            value: THREE.Texture;
+        };
+    }
+
+    constructor(name: string, size: number, rotationSpeed: number, basicColor: THREE.ColorRepresentation,space:Space,sun:Sun){
+        super(name,size,"",rotationSpeed,basicColor);
+        this.textures =  {
+            dayTexture: { type: "t", value: new THREE.TextureLoader().load( "2k_earth_daymap.jpeg" ) },
+            nightTexture: { type: "t", value: new THREE.TextureLoader().load( "2k_earth_nightmap.jpeg" ) },
+            cloudsTexture : { type: "t", value: new THREE.TextureLoader().load( "2k_earth_clouds.jpeg" )}
+        };
+        this.uniforms = {
+            ...this.textures, 
+            ...THREE.UniformsLib['lights'], 
+            pointLightIntensity: { value: sun.getLight().intensity}, 
+            ambientLightIntensity: { value: space.getLight().intensity}
+        }
+        const planetMaterial = new THREE.ShaderMaterial({
+            uniforms: this.uniforms,
+            vertexShader: vs,
+            fragmentShader: fs,
+            lights: true,
+        })
+        const planetMesh = new THREE.Mesh(sphereGeometry,planetMaterial);
+        planetMesh.name = name;
+        planetMesh.scale.set(size,size,size);
+        this.object = planetMesh;
+    }
+
+    get realistic() {
+        return this._realistic;
+    }
+
+    set realistic(real:boolean){
+        this._realistic = real;
+        const planet = this.object as THREE.Mesh;
+        if (real){
+            planet.material = new THREE.ShaderMaterial({
+                uniforms: this.uniforms,
+                vertexShader: vs,
+                fragmentShader: fs,
+                lights: true,
+            });
+        } else {
+            planet.material = new THREE.MeshPhongMaterial({color: this.basicColor});
+        }
     }
 }
