@@ -125,11 +125,7 @@ const vs = `
 struct PointLight {
     vec3 color;
     vec3 position; // light position, in camera coordinates
-    float distance; // used for attenuation purposes. Since
-                    // we're writing our own shader, it can
-                    // really be anything we want (as long
-                    // as we assign it to our light in its
-                    // "distance" field
+    float distance; // used for attenuation purposes
 };
    
 uniform PointLight pointLights[NUM_POINT_LIGHTS];
@@ -137,7 +133,6 @@ uniform PointLight pointLights[NUM_POINT_LIGHTS];
 varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 surfaceToLight;
-varying vec3 surfaceToView;
 
 void main() {
   vUv = uv;
@@ -145,7 +140,6 @@ void main() {
   vNormal = normalMatrix * normal;
   vec3 surfaceWorldPosition = (modelViewMatrix * vec4(position,1.0)).xyz;
   surfaceToLight = pointLights[0].position - surfaceWorldPosition;
-  surfaceToView = cameraPosition - surfaceWorldPosition;
   gl_Position = projectionMatrix * mvPosition;
 }
 `;
@@ -153,12 +147,8 @@ void main() {
 const fs = `
 struct PointLight {
     vec3 color;
-    vec3 position; // light position, in camera coordinates
-    float distance; // used for attenuation purposes. Since
-                    // we're writing our own shader, it can
-                    // really be anything we want (as long
-                    // as we assign it to our light in its
-                    // "distance" field
+    vec3 position;
+    float distance;
 };
    
 uniform PointLight pointLights[NUM_POINT_LIGHTS];
@@ -167,6 +157,8 @@ uniform float pointLightIntensity;
 
 uniform float ambientLightIntensity;
 
+uniform bool cloudy;
+
 uniform sampler2D dayTexture;
 uniform sampler2D nightTexture;
 uniform sampler2D cloudsTexture;
@@ -174,7 +166,6 @@ uniform sampler2D cloudsTexture;
 varying vec2 vUv;
 varying vec3 vNormal;
 varying vec3 surfaceToLight;
-varying vec3 surfaceToView;
 
 void main( void ) {
   vec3 dayColor = texture2D( dayTexture, vUv ).rgb;
@@ -184,45 +175,30 @@ void main( void ) {
   vec3 normal = normalize(vNormal);
 
   vec3 surfaceToLightDirection = normalize(surfaceToLight);
-  vec3 surfaceToViewDirection = normalize(surfaceToView);
-  vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
-  float specular = dot(normal, halfVector);
 
-  // compute cosine sun to normal so -1 is away from sun and +1 is toward sun.
-  float cosineAngleSunToNormal = dot(normalize(vNormal), surfaceToLightDirection);
+  // cosine of the angle between sun and normal
+  float sunToNormal = dot(normal, surfaceToLightDirection);
 
-  float light = dot(normal,surfaceToLightDirection);
+  // make the transition sharper, constraining the value multiplied by 10 between -1 and 1
+  sunToNormal = clamp( sunToNormal * 10.0, -1.0, 1.0);
 
-  // sharpen the edge beween the transition
-  cosineAngleSunToNormal = clamp( cosineAngleSunToNormal * 10.0, -1.0, 1.0);
+  // To use as a mix, convert ranges from -1 <> 1 to 0 <> 1
+  float mixTexture = sunToNormal * 0.5 + 0.5;
 
-  // convert to 0 to 1 for mixing
-  float mixAmount = cosineAngleSunToNormal * 0.5 + 0.5;
+  mixTexture *= pointLightIntensity;
 
-  mixAmount *= pointLightIntensity;
-
-  mixAmount += ambientLightIntensity;
+  mixTexture += ambientLightIntensity;
   
-  vec3 nightColorCloudy = nightColor * 0.6 + clouds * 0.4 * 0.6;
+  // Blending with the clouds texture
+  nightColor = cloudy ? nightColor * 0.6 + clouds * 0.4 * 0.6 : nightColor;
 
-  vec3 dayColorCloudy = dayColor * 0.6 + clouds * 0.4 * 0.6;
+  dayColor = cloudy ? dayColor * 0.6 + clouds * 0.4 * 0.6 : dayColor;
 
-  // Select day or night texture based on mix.
-  vec3 color = mixAmount > 1.0 ? dayColorCloudy * mixAmount : mix( nightColorCloudy, dayColorCloudy, mixAmount );
-
-  //vec3 finalColor = color * 0.2 + clouds * 0.8;
-
-  //vec3 color1 = cosineAngleSunToNormal < 0.0 ? dayColor : nightColor;
+  // Select day or night texture based on mix. If mixTexture is greater than 1 it is the day part
+  vec3 color = mixTexture > 1.0 ? dayColor * mixTexture : mix( nightColor, dayColor, mixTexture );
 
   gl_FragColor = vec4( color, 1.0 );
 
-  //gl_FragColor.rgb += specular;
-
-  //gl_FragColor = vec4(1,0,0,1);
-
-  //gl_FragColor = vec4(dayColor, 1.0); 
-
-  //gl_FragColor.rgb *= 0.0;
 }
 
 `;
@@ -301,6 +277,28 @@ export class CelestialBody {
     }
 }
 
+export class PlanetRing extends CelestialBody {
+
+    constructor(planetOrbit: Orbit,ring: string){
+        super();
+        const rings = new THREE.TextureLoader().load(ring);
+        const ringGeometry = new THREE.RingBufferGeometry(3,5,64);
+        const pos = ringGeometry.attributes.position;
+        const v3 = new THREE.Vector3();
+        for (let i = 0; i < pos.count; i++){
+            v3.fromBufferAttribute(pos, i);
+            ringGeometry.attributes.uv.setXY(i, v3.length() < 4 ? 0 : 1, 1);
+        }
+        const ringMaterial = new THREE.MeshBasicMaterial({map:rings, color: 0xffffff, side: THREE.DoubleSide, transparent: true});
+        const ringMesh = new THREE.Mesh(ringGeometry,ringMaterial);
+        ringMesh.scale.set(1,1,1);
+        const planetPosition = planetOrbit.getObject().getObjectByName("proximity")?.position || new THREE.Vector3(0,0,0);
+        ringMesh.position.set(planetPosition.x,planetPosition.y,planetPosition.z);
+        ringMesh.rotation.x = -40;
+        this.object = ringMesh;
+    }
+}
+
 
 export class Planet extends CelestialBody {
 
@@ -372,13 +370,13 @@ export class Orbit extends CelestialBody {
 
     private fakeCamera: THREE.Camera;
 
-    constructor(planet:Planet,rotationSpeed: number, distanceToSun: number, camera: THREE.Camera, fakeCamera: THREE.Camera) {
+    constructor(planet:Planet,rotationSpeed: number, distance: number, camera: THREE.Camera, fakeCamera: THREE.Camera) {
         super(rotationSpeed);
         const orbit = new THREE.Object3D();
         const planetProximity = new THREE.Object3D();
         planetProximity.name = "proximity";
         orbit.add(planetProximity);
-        planetProximity.position.x = distanceToSun;
+        planetProximity.position.x = distance;
         this.planet = planet;
         planetProximity.add(planet.getObject());
         this.object = orbit;
@@ -430,6 +428,8 @@ export class Space extends CelestialBody {
 
     private light: THREE.AmbientLight;
 
+    private onLightChange: (value:number,light:string) => void = () => {};
+
     constructor(){
         super();
         const scene = new THREE.Scene();
@@ -459,9 +459,13 @@ export class Space extends CelestialBody {
         return this.light;
     }
 
+    setOnLightChange(func:(value:number,light:string) => void){
+        this.onLightChange = func;
+    }
+
     buildUserControls(gui: GUI){
         const spaceControlFolder = gui.addFolder("Space");;
-        spaceControlFolder.add(this.light,"intensity",0,0.3,0.05).name("Darkness");
+        spaceControlFolder.add(this.light,"intensity",0,0.3,0.05).name("Darkness").onChange((value) => this.onLightChange(value,"ambientLightIntensity"));
     }
 }
 
@@ -469,6 +473,8 @@ export class Space extends CelestialBody {
 export class Sun extends CelestialBody {
     
     private light: THREE.PointLight;
+
+    private onLightChange: (value:number,light:string) => void = () => {};
 
     constructor(space:Space,rotationSpeed: number){
         super(rotationSpeed);
@@ -491,9 +497,13 @@ export class Sun extends CelestialBody {
         return this.light;
     }
 
+    setOnLightChange(func:(value:number,light:string) => void){
+        this.onLightChange = func;
+    }
+
     buildUserControls(gui: GUI){
         const sunControlFolder = gui.addFolder("Sun");
-        sunControlFolder.add(this.light,"intensity",0,4).name("Shininess");
+        sunControlFolder.add(this.light,"intensity",0,4).name("Shininess").onChange((value) => this.onLightChange(value,"pointLightIntensity"));
         super.buildUserControls(sunControlFolder);
     }
 }
@@ -528,7 +538,8 @@ export class Earth extends Planet {
             ...this.textures, 
             ...THREE.UniformsLib['lights'], 
             pointLightIntensity: { value: sun.getLight().intensity}, 
-            ambientLightIntensity: { value: space.getLight().intensity}
+            ambientLightIntensity: { value: space.getLight().intensity},
+            cloudy: {value : true}
         }
         const planetMaterial = new THREE.ShaderMaterial({
             uniforms: this.uniforms,
@@ -539,6 +550,8 @@ export class Earth extends Planet {
         const planetMesh = new THREE.Mesh(sphereGeometry,planetMaterial);
         planetMesh.name = name;
         planetMesh.scale.set(size,size,size);
+        sun.setOnLightChange(this.updateLight);
+        space.setOnLightChange(this.updateLight);
         this.object = planetMesh;
     }
 
@@ -559,5 +572,14 @@ export class Earth extends Planet {
         } else {
             planet.material = new THREE.MeshPhongMaterial({color: this.basicColor});
         }
+    }
+
+    updateLight = (value: number, lightType: string) => {
+        this.uniforms[lightType] = {value};
+    }
+
+    buildUserControls(gui: GUI){
+        super.buildUserControls(gui);
+        gui.add(this.uniforms.cloudy,"value").name("Cloudy");
     }
 }
