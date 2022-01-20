@@ -1,7 +1,64 @@
 import * as THREE from 'three';
 import {OrbitControls} from 'three/examples/jsm/controls/OrbitControls';
-import {CelestialBody, Earth, MERCURY_DISTANCE, MERCURY_SIZE, Orbit, Planet, PlanetRing, Satellite, Space, Sun} from "./planets";
+import {Earth, Orbit, Planet, PlanetRing, Satellite} from "./planets";
 import { generateGUIControls } from './helper/gui';
+import { CelestialBody, 
+    EARTH_COLOR, 
+    EARTH_DISTANCE, 
+    EARTH_ORBIT_SPEED, 
+    EARTH_ROTATION_SPEED, 
+    EARTH_SIZE, 
+    JUPITER_COLOR, 
+    JUPITER_DISTANCE, 
+    JUPITER_ORBIT_SPEED,
+    JUPITER_ROTATION_SPEED, 
+    JUPITER_SIZE, 
+    JUPITER_SURFACE, 
+    MARS_COLOR, 
+    MARS_DISTANCE, 
+    MARS_ORBIT_SPEED, 
+    MARS_ROTATION_SPEED, 
+    MARS_SIZE, 
+    MARS_SURFACE, 
+    MERCURY_COLOR, 
+    MERCURY_DISTANCE, 
+    MERCURY_ORBIT_SPEED, 
+    MERCURY_ROTATION_SPEED, 
+    MERCURY_SIZE, 
+    MERCURY_SURFACE, 
+    MOON_DISTANCE, 
+    MOON_ORBIT_SPEED, 
+    MOON_ROTATION_SPEED, 
+    MOON_SIZE, 
+    MOON_SURFACE, 
+    NEPTUNE_COLOR, 
+    NEPTUNE_DISTANCE, 
+    NEPTUNE_ORBIT_SPEED, 
+    NEPTUNE_ROTATION_SPEED, 
+    NEPTUNE_SIZE, 
+    NEPTUNE_SURFACE, 
+    SATURN_COLOR, 
+    SATURN_DISTANCE, 
+    SATURN_ORBIT_SPEED, 
+    SATURN_RING, 
+    SATURN_ROTATION_SPEED, 
+    SATURN_SIZE, 
+    SATURN_SURFACE, 
+    SUN_ROTATION_SPEED, 
+    URANUS_COLOR, 
+    URANUS_DISTANCE, 
+    URANUS_ORBIT_SPEED, 
+    URANUS_ROTATION_SPEED, 
+    URANUS_SIZE, 
+    URANUS_SURFACE, 
+    VENUS_COLOR, 
+    VENUS_DISTANCE, 
+    VENUS_ORBIT_SPEED, 
+    VENUS_ROTATION_SPEED, 
+    VENUS_SIZE, 
+    VENUS_SURFACE } from './helper/spaceCommons';
+import { Space } from './space';
+import { Sun } from './sun';
 
 const canvas = document.querySelector('#canvas') as HTMLCanvasElement;
 
@@ -25,32 +82,32 @@ const solarSystem = new CelestialBody();
 space.addCelestialBody(solarSystem);
 
 //** Sun */
-const sun = new Sun(space,1.2);
+const sun = new Sun(space,SUN_ROTATION_SPEED);
 
-//** Planets */
-const mercury = new Planet("mercury",MERCURY_SIZE,"2k_mercury.jpeg",2,0x92a3b3);
-const venus =  new Planet("venus",0.7,"2k_venus_atmosphere.jpeg",2,0xdaa969);
-const earth =  new Earth("earth",1,0.5,0x2186e4,space,sun);
-const moon = new Satellite("moon",0.2,"2k_moon.jpg",3);
-const mars = new Planet("mars",1,"2k_mars.jpeg",2,0xea622b);
-const jupiter = new Planet("jupiter",3,"2k_jupiter.jpeg",2,0xebb672);
-const saturn = new Planet("saturn",2,"2k_saturn.jpeg",2,0xecb673);
-const uranus = new Planet("uranus",1.5,"2k_uranus.jpeg",2,0x6dc8db);
-const neptune = new Planet("neptune",1.7,"2k_neptune.jpeg",2,0x05457f);
+//** Planets and moon*/
+const mercury = new Planet("mercury",MERCURY_SIZE,MERCURY_SURFACE,MERCURY_ROTATION_SPEED,MERCURY_COLOR);
+const venus =  new Planet("venus",VENUS_SIZE,VENUS_SURFACE,VENUS_ROTATION_SPEED,VENUS_COLOR);
+const earth =  new Earth("earth",EARTH_SIZE,EARTH_ROTATION_SPEED,EARTH_COLOR,space,sun);
+const moon = new Satellite("moon",MOON_SIZE,MOON_SURFACE,MOON_ROTATION_SPEED);
+const mars = new Planet("mars",MARS_SIZE,MARS_SURFACE,MARS_ROTATION_SPEED,MARS_COLOR);
+const jupiter = new Planet("jupiter",JUPITER_SIZE,JUPITER_SURFACE,JUPITER_ROTATION_SPEED,JUPITER_COLOR);
+const saturn = new Planet("saturn",SATURN_SIZE,SATURN_SURFACE,SATURN_ROTATION_SPEED,SATURN_COLOR);
+const uranus = new Planet("uranus",URANUS_SIZE,URANUS_SURFACE,URANUS_ROTATION_SPEED,URANUS_COLOR);
+const neptune = new Planet("neptune",NEPTUNE_SIZE,NEPTUNE_SURFACE,NEPTUNE_ROTATION_SPEED,NEPTUNE_COLOR);
 
 
 //** Planets orbits */
-const mercuryOrbit = new Orbit(mercury,2,MERCURY_DISTANCE,camera,fakeCamera);
-const venusOrbit = new Orbit(venus,1.5,10,camera,fakeCamera);
-const earthOrbit = new Orbit(earth,1,20,camera,fakeCamera);
-const moonOrbit = new Orbit(moon,2,4,camera,fakeCamera);
-const marsOrbit = new Orbit(mars,0.7,30,camera,fakeCamera);
-const jupiterOrbit = new Orbit(jupiter,0.5,45,camera,fakeCamera);
-const saturnOrbit = new Orbit(saturn,0.2,55,camera,fakeCamera);
-const uranusOrbit = new Orbit(uranus,0.1,65,camera,fakeCamera);
-const neptunusOrbit = new Orbit(neptune,0.04,75,camera,fakeCamera);
+const mercuryOrbit = new Orbit(mercury,MERCURY_ORBIT_SPEED,MERCURY_DISTANCE,camera,fakeCamera);
+const venusOrbit = new Orbit(venus,VENUS_ORBIT_SPEED,VENUS_DISTANCE,camera,fakeCamera);
+const earthOrbit = new Orbit(earth,EARTH_ORBIT_SPEED,EARTH_DISTANCE,camera,fakeCamera);
+const moonOrbit = new Orbit(moon,MOON_ORBIT_SPEED,MOON_DISTANCE,camera,fakeCamera);
+const marsOrbit = new Orbit(mars,MARS_ORBIT_SPEED,MARS_DISTANCE,camera,fakeCamera);
+const jupiterOrbit = new Orbit(jupiter,JUPITER_ORBIT_SPEED,JUPITER_DISTANCE,camera,fakeCamera);
+const saturnOrbit = new Orbit(saturn,SATURN_ORBIT_SPEED,SATURN_DISTANCE,camera,fakeCamera);
+const uranusOrbit = new Orbit(uranus,URANUS_ORBIT_SPEED,URANUS_DISTANCE,camera,fakeCamera);
+const neptuneOrbit = new Orbit(neptune,NEPTUNE_ORBIT_SPEED,NEPTUNE_DISTANCE,camera,fakeCamera);
 
-const saturnRing = new PlanetRing(saturnOrbit,"2k_saturn_ring_alpha.png");
+const saturnRing = new PlanetRing(saturnOrbit,SATURN_RING);
 
 //** Contains all rotating objects */
 const objectsSolarSystem : CelestialBody[] = [];
@@ -62,7 +119,7 @@ saturnOrbit.add(saturnRing);
 export let controls = new OrbitControls(fakeCamera,renderer.domElement);
 controls.update();
 
-//** Add objets to solar system */
+//** Add objects to solar system */
 solarSystem.add(sun);
 solarSystem.add(mercuryOrbit);
 solarSystem.add(venusOrbit);
@@ -71,10 +128,10 @@ solarSystem.add(marsOrbit);
 solarSystem.add(jupiterOrbit);
 solarSystem.add(saturnOrbit);
 solarSystem.add(uranusOrbit);
-solarSystem.add(neptunusOrbit);
+solarSystem.add(neptuneOrbit);
 
 
-//** Add objets that rotate */
+//** Add objects that rotate */
 objectsSolarSystem.push(sun);
 objectsSolarSystem.push(mercuryOrbit);
 objectsSolarSystem.push(mercury);
@@ -92,7 +149,7 @@ objectsSolarSystem.push(saturnOrbit);
 objectsSolarSystem.push(saturn);
 objectsSolarSystem.push(uranusOrbit);
 objectsSolarSystem.push(uranus);
-objectsSolarSystem.push(neptunusOrbit);
+objectsSolarSystem.push(neptuneOrbit);
 objectsSolarSystem.push(neptune);
 
 
@@ -105,7 +162,7 @@ celestialBodies.push(marsOrbit);
 celestialBodies.push(jupiterOrbit);
 celestialBodies.push(saturnOrbit);
 celestialBodies.push(uranusOrbit);
-celestialBodies.push(neptunusOrbit);
+celestialBodies.push(neptuneOrbit);
 celestialBodies.push(sun);
 celestialBodies.push(space);
 

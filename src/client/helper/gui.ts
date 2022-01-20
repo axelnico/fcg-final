@@ -1,5 +1,5 @@
 import {GUI} from 'dat.gui';
-import { CelestialBody } from '../planets';
+import { CelestialBody } from './spaceCommons';
 
 /** GUI controls manegement */
 export const generateGUIControls = (celestialBodies: CelestialBody[]) => {
