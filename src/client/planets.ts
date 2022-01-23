@@ -24,8 +24,7 @@ void main() {
   vUv = uv;
   vec4 mvPosition = modelViewMatrix * vec4(position, 1.0);
   vNormal = normalMatrix * normal;
-  vec3 surfaceWorldPosition = (modelViewMatrix * vec4(position,1.0)).xyz;
-  surfaceToLight = pointLights[0].position - surfaceWorldPosition;
+  surfaceToLight = pointLights[0].position - mvPosition.xyz;
   gl_Position = projectionMatrix * mvPosition;
 }
 `;
@@ -54,9 +53,9 @@ varying vec3 vNormal;
 varying vec3 surfaceToLight;
 
 void main( void ) {
-  vec3 dayColor = texture2D( dayTexture, vUv ).rgb;
-  vec3 nightColor = texture2D( nightTexture, vUv ).rgb;
-  vec3 clouds = texture2D( cloudsTexture, vUv ).rgb;
+  vec3 dayCl = texture2D( dayTexture, vUv ).rgb;
+  vec3 nightCl = texture2D( nightTexture, vUv ).rgb;
+  vec3 cloudsCl = texture2D( cloudsTexture, vUv ).rgb;
 
   vec3 normal = normalize(vNormal);
 
@@ -65,8 +64,8 @@ void main( void ) {
   // cosine of the angle between sun and normal
   float sunToNormal = dot(normal, surfaceToLightDirection);
 
-  // make the transition sharper, constraining the value multiplied by 10 between -1 and 1
-  sunToNormal = clamp( sunToNormal * 10.0, -1.0, 1.0);
+  // make the transition sharper, constraining the value multiplied by 20 between -1 and 1
+  sunToNormal = clamp( sunToNormal * 20.0, -1.0, 1.0);
 
   // To use as a mix, convert ranges from -1 <> 1 to 0 <> 1
   float mixTexture = sunToNormal * 0.5 + 0.5;
@@ -76,12 +75,12 @@ void main( void ) {
   mixTexture += ambientLightIntensity;
   
   // Blending with the clouds texture
-  nightColor = cloudy ? nightColor * 0.6 + clouds * 0.4 * 0.6 : nightColor;
+  nightCl = cloudy ? nightCl * 0.6 + cloudsCl * 0.4 * 0.6 : nightCl;
 
-  dayColor = cloudy ? dayColor * 0.6 + clouds * 0.4 * 0.6 : dayColor;
+  dayCl = cloudy ? dayCl * 0.6 + cloudsCl * 0.4 * 0.6 : dayCl;
 
   // Select day or night texture based on mix. If mixTexture is greater than 1 it is the day part
-  vec3 color = mixTexture > 1.0 ? dayColor * mixTexture : mix( nightColor, dayColor, mixTexture );
+  vec3 color = mixTexture > 1.0 ? dayCl * mixTexture : mix( nightCl, dayCl, mixTexture );
 
   gl_FragColor = vec4( color, 1.0 );
 
@@ -239,7 +238,7 @@ export class Orbit extends CelestialBody {
     }
 }
 
-//** Class that extends Planet because Earth has a specific behaviour and uses customs shader to render */
+//** Class that extends Planet because Earth has a specific behaviour and uses custom shaders to render */
 export class Earth extends Planet {
 
     private uniforms: any;
