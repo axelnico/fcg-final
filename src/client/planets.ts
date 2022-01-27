@@ -60,8 +60,6 @@ void main( void ) {
   vec3 nightCl = texture2D( nightTexture, vUv ).rgb;
   vec3 cloudsCl = texture2D( cloudsTexture, vUv ).rgb;
 
-  vec3 lightColor = vec3(1,1,1);
-
   vec3 normal = normalize(vNormal);
 
   vec3 surfaceToViewDirection = normalize(surfaceToView);
@@ -70,37 +68,36 @@ void main( void ) {
 
   vec3 halfVector = normalize(surfaceToLightDirection + surfaceToViewDirection);
 
-  float specular = dot(normal, halfVector);
-
   // cosine of the angle between sun and normal
   float sunToNormal = dot(normal, surfaceToLightDirection);
+
+  float specular = 0.0;
 
   // make the transition sharper, constraining the value multiplied by 20 between -1 and 1
   sunToNormal = clamp( sunToNormal * 20.0, -1.0, 1.0);
 
   // To use as a mix, convert ranges from -1 <> 1 to 0 <> 1
   float mixTexture = sunToNormal * 0.5 + 0.5;
-
-  //mixTexture *= pointLightIntensity;
-
-  //mixTexture += ambientLightIntensity;
-
-  //mixTexture += specular;
   
+  mixTexture *= pointLightIntensity;
+
+  if (mixTexture > 0.0) {
+    specular = pow(max(0.0,dot(normal,halfVector)),30.0);
+  }
+
+  mixTexture += ambientLightIntensity;
+
+  mixTexture += specular;
+
   // Blending with the clouds texture
   nightCl = cloudy ? nightCl * 0.6 + cloudsCl * 0.4 * 0.6 : nightCl;
 
   dayCl = cloudy ? dayCl * 0.6 + cloudsCl * 0.4 * 0.6 : dayCl;
 
   // Select day or night texture based on mix. If mixTexture is greater than 1 it is the day part
-  vec3 color = mixTexture > 1.0 ? dayCl * mixTexture : mix( nightCl, dayCl, mixTexture );
-
-  float phong = pointLightIntensity * max(0.0,sunToNormal)*(1.0 + 1.0*pow(max(0.0,specular),30.0)/sunToNormal) + 1.0*ambientLightIntensity;
-
-  color = phong > 1.0 ? dayCl * phong : mix(nightCl, dayCl, phong);
+  vec3 color = mixTexture > 1.0 ? dayCl * mixTexture: mix( nightCl, dayCl, mixTexture );
 
   gl_FragColor = vec4( color, 1.0 );
-
 }
 
 `;
