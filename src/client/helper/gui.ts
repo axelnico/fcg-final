@@ -1,7 +1,7 @@
 import {GUI} from 'dat.gui';
 import { CelestialBody } from './spaceCommons';
 
-/** GUI controls manegement */
+/** GUI controls management */
 export const generateGUIControls = (celestialBodies: CelestialBody[]) => {
     const gui = new GUI();
     const length = celestialBodies.length;
