@@ -1,5 +1,5 @@
 # fcg-final
-Fundamentos de computación gráfica - TP Final - Sistema solar
+Fundamentos de computación gráfica - Proyecto Final - Sistema solar
 
 # Software necesario para correr el proyecto
 
